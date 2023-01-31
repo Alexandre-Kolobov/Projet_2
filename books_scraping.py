@@ -21,13 +21,13 @@ else:
 soup = BeautifulSoup(response.text ,features="html.parser")
 all_info = soup.find("table" , {"class" : "table table-striped"}).findAll("td")
 
-upc = all_info[0]
-#product_type = all_info[1]
-price_excluding_tax = all_info[2]
-price_including_tax = all_info[3]
-#tax = all_info[4]
-number_available = all_info[5]
-review_rating = all_info[6]  #Number of reviews or stars? 
+upc = all_info[0].text
+#product_type = all_info[1].text
+price_excluding_tax = all_info[2].text[2:] #Faut-il garder symbole livres ?
+price_including_tax = all_info[3].text[2:]
+#tax = all_info[4].text
+number_available = re.findall("\d+",all_info[5].text) #Le format semble être toujour le même, donc cet extraction doit fonctionner
+review_rating = all_info[6].text  #Number of reviews or stars? 
 
 
 title_info = soup.find("div" , {"class" : "col-sm-6 product_main"}).find("h1")
@@ -45,4 +45,8 @@ category = category_info.text
 image_url_info = soup.find("img")
 image_url = url_racine + image_url_info["src"].replace("../..","")
 
-
+#Ecriture dans un fichier 
+with open ("scraping_result.csv","w") as my_file:
+    my_file.write ("product_page_url;universal_product_code;title;price_including_tax;price_excluding_tax;number_available;product_description;category;review_rating;image_url" + "\n")
+    my_file.write (url + ";" + upc + ";" + title + ";" + price_including_tax + ";" + price_excluding_tax + ";" + number_available[0] + ";" + product_description + ";" + category + ";" + review_rating + ";" + image_url)
+    
