@@ -1,8 +1,9 @@
 import requests
 from bs4 import BeautifulSoup
 import re
-from datetime import datetime
-
+import csv
+import os
+import shutil
 
 #Variables globales:
 url_racine = "http://books.toscrape.com"
@@ -10,6 +11,13 @@ url_racine = "http://books.toscrape.com"
 url_category_to_scrap = "http://books.toscrape.com/catalogue/category/books/mystery_3/page-1.html"
 url_category = [] #liste qui va contenir url de chaque category
 url = [] #liste qui va contenir url de chaque livre
+liste_dict_categ = [] #liste qui va contenir les dictionnaires avec des info de chaque livre par categorie
+
+#Remove old files with folder and create a new empty folder
+if os.path.exists("scraping_result/") == True:
+    shutil.rmtree("scraping_result/")
+
+os.mkdir("scraping_result/")
 
 
 #Verifier que l'URL est accessible
@@ -97,31 +105,53 @@ def extract_info(book_url):
     image_url_info = soup.find("img")
     image_url = url_racine + image_url_info["src"].replace("../..","") #image_url_info["src"] - You can access a tag’s attributes by treating the tag like a dictionary
 
+
     #Ecriture dans un fichier 
     #
     """
     with open ("scraping_result.csv","a", encoding="utf-8") as my_file:
+        my_file.write ("product_page_url;universal_product_code;title;price_including_tax;price_excluding_tax;number_available;product_description;category;review_rating;image_url" + "\n")
         my_file.write (book_url + ";" + upc + ";" + title + ";" + price_including_tax + ";" + price_excluding_tax + ";" + number_available[0] + ";" + product_description + ";" + category + ";" + review_rating + ";" + image_url + "\n")
     """
     #Passer par dictionnaire + une fonction qui fait le liste des dictionnaires
+   
+    dict_info = {"product_page_url":book_url,"universal_product_code":upc,"title":title,"price_including_tax":price_including_tax, \
+        "price_excluding_tax":price_excluding_tax,"number_available":number_available[0],"product_description":product_description, \
+        "category":category,"review_rating":review_rating,"image_url":image_url}
+    
+    liste_dict_categ.append(dict_info)
     
 
+
+
+def write_file(list_with_dicts):
+    for i in list_with_dicts:
+        print (i["category"])
+        if os.path.isfile("scraping_result/" + i["category"] + ".csv") == False:
+            with open ("scraping_result/"+ i["category"] + ".csv","w",newline="",encoding="utf-8") as my_file:
+                writer = csv.DictWriter(my_file, i.keys(),delimiter=";")
+                writer.writeheader()
+                writer.writerow(i)
+        else:
+            with open ("scraping_result/"+ i["category"] + ".csv","a",newline="",encoding="utf-8") as my_file:
+                writer = csv.DictWriter(my_file, i.keys(),delimiter=";")
+                writer.writerow(i)
 
 
 list_categories()
 
 for category in url_category:
     category_information(category)
+#category_information("http://books.toscrape.com/catalogue/category/books/music_14/index.html")
 
-#category_information("http://books.toscrape.com/catalogue/category/books/classics_6/index.html")
-
-liste_categ = []
 for i in url:
     extract_info(i)
-    data = extract_info(i)
-    liste_categ.append(data)
-
+    #data = extract_info(i)
+    #liste_categ.append(data)
     #dev fonction pour ecrire un fichier en one shot 
+
+write_file(liste_dict_categ)
+
 
 
 """
