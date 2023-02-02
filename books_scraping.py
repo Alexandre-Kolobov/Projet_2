@@ -4,6 +4,7 @@ import re
 import csv
 import os
 import shutil
+import wget
 
 
 # Global variables:
@@ -12,11 +13,15 @@ url_category = []  # List for urls of each category
 url = []  # List for url of each book
 liste_dict_categ = []  # List to save dictionnaries with all book information
 folder_cvs = "scraping_result/"
+folder_img = "scraping_result/img/"
+chars_to_replace = ['<', '>', ':', '/', '\\', '|', '?', '*', "\""]
 
-# Remove old files and folder and create a new empty folder:
-if os.path.exists(folder_cvs) is True:
-    shutil.rmtree(folder_cvs)
-os.mkdir(folder_cvs)
+
+def remove_folder(folder):
+    # Remove old files and folder and create a new empty folder:
+    if os.path.exists(folder) is True:
+        shutil.rmtree(folder)
+    os.mkdir(folder)
 
 
 def list_categories():  # To get URL of each category
@@ -42,6 +47,10 @@ def list_categories():  # To get URL of each category
 
 def category_information(url_category):  # To get URL of each book
     response = requests.get(url_category)
+    if response.ok is False:
+        print("URL is KO:" + url_category)
+        exit(1)
+
     soup = BeautifulSoup(response.text, features="html.parser")
 
     one_category_url = soup.findAll("div", {"class": "image_container"})
@@ -69,6 +78,10 @@ def category_information(url_category):  # To get URL of each book
 
 def extract_info(book_url):
     response = requests.get(book_url)
+    if response.ok is False:
+        print("URL is KO:" + book_url)
+        exit(1)
+
     soup = BeautifulSoup(response.text, features="html.parser")
     all_info_tstriped = soup.find("table", {"class": "table table-striped"})
     all_info = all_info_tstriped.findAll("td")
@@ -120,17 +133,40 @@ def extract_info(book_url):
 # Create and append a file per category with book's informations
 def write_file(list_with_dicts):
     for i in list_with_dicts:
-        file_name = (folder_cvs + i["category"] + ".csv")
-        if os.path.isfile(folder_cvs + i["category"] + ".csv") is False:
-            with open(file_name, "w", newline="", encoding="utf-8") as file:
-                writer = csv.DictWriter(file, i.keys(), delimiter=";")
+        file_name = (replace_chars(" ", "_", i["category"]) + ".csv")
+        file = (folder_cvs + file_name)
+        if os.path.isfile(file) is False:
+            with open(file, "w", newline="", encoding="utf-8") as wfile:
+                writer = csv.DictWriter(wfile, i.keys(), delimiter=";")
                 writer.writeheader()
                 writer.writerow(i)
         else:
-            with open(file_name, "a", newline="", encoding="utf-8") as file:
-                writer = csv.DictWriter(file, i.keys(), delimiter=";")
+            with open(file, "a", newline="", encoding="utf-8") as wfile:
+                writer = csv.DictWriter(wfile, i.keys(), delimiter=";")
                 writer.writerow(i)
 
+
+# Download images
+def download_img(list_with_dicts):
+    for i in list_with_dicts:
+        print(i["category"] + "###" + i["title"] + "\n")
+        file_name = replace_chars(chars_to_replace, "", i["title"])
+        file = (folder_img + file_name + ".jpg")
+        wget.download(i["image_url"], out=file)
+        print("\n")
+
+
+# Replace file name caracteres and limit max length
+def replace_chars(chars, replacement, text):
+    for char in chars:
+        if char in text:
+            text = text.replace(char, replacement)
+    return text[:100]
+
+
+print("Removing old files")
+remove_folder(folder_cvs)
+remove_folder(folder_img)
 
 print("Listing categories")
 list_categories()
@@ -145,3 +181,6 @@ for i in url:
 
 print("Making files")
 write_file(liste_dict_categ)
+
+print("Downloading book's images")
+download_img(liste_dict_categ)
