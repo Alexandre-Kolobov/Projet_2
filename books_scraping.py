@@ -1,38 +1,43 @@
-import requests
-from bs4 import BeautifulSoup
 import re
 import csv
 import os
 import shutil
+import requests
+from bs4 import BeautifulSoup
 import wget
 
 
 # Global variables:
-url_racine = "http://books.toscrape.com"
+URL_RACINE = "http://books.toscrape.com"
+FOLDER_CVS = "scraping_result/"
+FOLDER_IMG = "scraping_result/img/"
 url_category = []  # List for urls of each category
 url = []  # List for url of each book
 liste_dict_categ = []  # List to save dictionnaries with all book information
-folder_cvs = "scraping_result/"
-folder_img = "scraping_result/img/"
 chars_to_replace = ['<', '>', ':', '/', '\\', '|', '?', '*', "\""]
 
 
 def remove_folder(folder):
-    # Remove old files and folder and create a new empty folder:
+    """Remove folder and it's files and create a new empty folder.
+
+    Arguments:
+    folder -- the path of folder
+    """
     if os.path.exists(folder) is True:
         shutil.rmtree(folder)
     os.mkdir(folder)
 
 
-def list_categories():  # To get URL of each category
-    response = requests.get(url_racine)
+def list_categories():
+    """To get URL of each category"""
+    response = requests.get(URL_RACINE)
 
     # Check that URL is ok:
     if response.ok:
-        print("The link: " + url_racine + " is ok")
+        print("The link: " + URL_RACINE + " is ok")
         print("Start scraping..")
     else:
-        print("The link: " + url_racine + " is not accessible")
+        print("The link: " + URL_RACINE + " is not accessible")
         exit(1)
 
     # Put the URL of each category in the list
@@ -42,10 +47,15 @@ def list_categories():  # To get URL of each category
 
     for category_a in all_categories:
         global url_category
-        url_category.append(url_racine + "/" + category_a["href"])
+        url_category.append(URL_RACINE + "/" + category_a["href"])
 
 
-def category_information(url_category):  # To get URL of each book
+def category_information(url_category):
+    """To get URL of each book by parsing URL of each category
+
+    Arguments:
+    url_category -- URL of one category
+    """
     response = requests.get(url_category)
     if response.ok is False:
         print("URL is KO:" + url_category)
@@ -57,7 +67,7 @@ def category_information(url_category):  # To get URL of each book
     for html_a in one_category_url:
         a = html_a.find("a")
         global url
-        url.append(url_racine + a["href"].replace("../../..", "/catalogue"))
+        url.append(URL_RACINE + a["href"].replace("../../..", "/catalogue"))
 
     # Use of recursive to check possibility of next page
     find_next_page = soup.find("li", {"class": "next"})
@@ -77,6 +87,11 @@ def category_information(url_category):  # To get URL of each book
 
 
 def extract_info(book_url):
+    """To get book information and save in a dictionnary
+
+    Arguments
+    book_url -- URL of one book
+    """
     response = requests.get(book_url)
     if response.ok is False:
         print("URL is KO:" + book_url)
@@ -114,7 +129,7 @@ def extract_info(book_url):
     category = category_info.text
 
     image_url_info = soup.find("img")
-    image_url = url_racine + image_url_info["src"].replace("../..", "")
+    image_url = URL_RACINE + image_url_info["src"].replace("../..", "")
 
     # Add all book's information in a dictionnary
     dict_info = {"product_page_url": book_url, "universal_product_code": upc,
@@ -130,11 +145,15 @@ def extract_info(book_url):
     liste_dict_categ.append(dict_info)
 
 
-# Create and append a file per category with book's informations
 def write_file(list_with_dicts):
+    """From a list with dictionnaries create a file and append it
+
+    Arguments:
+    list_with_dicts -- list with dictionnaries that contains books informations
+    """
     for i in list_with_dicts:
         file_name = (replace_chars(" ", "_", i["category"]) + ".csv")
-        file = (folder_cvs + file_name)
+        file = (FOLDER_CVS + file_name)
         if os.path.isfile(file) is False:
             with open(file, "w", newline="", encoding="utf-8") as wfile:
                 writer = csv.DictWriter(wfile, i.keys(), delimiter=";")
@@ -146,18 +165,28 @@ def write_file(list_with_dicts):
                 writer.writerow(i)
 
 
-# Download images
 def download_img(list_with_dicts):
+    """Download images from URL in a dictionnary
+
+    Argumetns:
+    list_with_dicts -- list with dictionnaries that contains image's URL
+    """
     for i in list_with_dicts:
         print(i["category"] + "###" + i["title"] + "\n")
         file_name = replace_chars(chars_to_replace, "", i["title"])
-        file = (folder_img + file_name + ".jpg")
+        file = (FOLDER_IMG + file_name + ".jpg")
         wget.download(i["image_url"], out=file)
         print("\n")
 
 
-# Replace file name caracteres and limit max length
 def replace_chars(chars, replacement, text):
+    """Replace file name caracteres and limit max length
+
+    Arguments:
+    chars -- Characters to be replaced
+    replacement -- By what characters will be replaced
+    text - Text where characters will be replaced
+    """
     for char in chars:
         if char in text:
             text = text.replace(char, replacement)
@@ -165,8 +194,8 @@ def replace_chars(chars, replacement, text):
 
 
 print("Removing old files")
-remove_folder(folder_cvs)
-remove_folder(folder_img)
+remove_folder(FOLDER_CVS)
+remove_folder(FOLDER_IMG)
 
 print("Listing categories")
 list_categories()
