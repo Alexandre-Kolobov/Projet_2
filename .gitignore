@@ -2,3 +2,4 @@
 /.venv
 *.csv
 /scraping_result
+/livrables
