@@ -24,3 +24,6 @@ This document will help you to set up the virtual environment and to execute the
 	5)Go to Projet_2 folder and make "pip install -r requirements.txt"
 	
 	6)Now you are ready to execute the program. In the commande line make "python books_scraping.py". Wait untill the end of execution (can take some minutes)
+	
+Attention:
+Extracted files are removed on each execution, so if you need to keep it, please move it in another folder.
