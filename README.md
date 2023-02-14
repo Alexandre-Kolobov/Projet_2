@@ -19,7 +19,7 @@ This document will help you to set up the virtual environment and to execute the
 		For Linux: venv/bin/activate
 	
 	
-	4)Place your command line in /YOUR_FOLDER and Make "git init" and then "git clone https://github.com/Alexandre-Kolobov/Projet_2.git"
+	4)Place your command line in /YOUR_FOLDER and then "git clone https://github.com/Alexandre-Kolobov/Projet_2.git"
 	
 	5)Go to Projet_2 folder and make "pip install -r requirements.txt"
 	
